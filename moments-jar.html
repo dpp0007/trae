@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moments Jar — For You, Mom</title>
+<meta name="description" content="A beautiful memory jar filled with heartfelt moments. Create your own memory jar to share with loved ones.">
+<meta name="theme-color" content="#c8943f">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🫙</text></svg>">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --ivory:#faf6ef;--cream:#f5ede0;--amber:#c8943f;--amber-soft:#e8c47a;
+  --amber-pale:#f2dca8;--brown:#6b4c2a;--brown-dark:#3d2b15;
+  --rose:#d4907a;--gold:#b8892e;--ink:#2c1f0e;--ink-soft:#5c3d1e;
+}
+html{scroll-behavior:smooth}
+body{background:#110800;color:var(--ivory);font-family:'DM Sans',sans-serif;overflow-x:hidden;min-height:100vh}
+
+body::after{content:'';position:fixed;inset:0;opacity:.45;pointer-events:none;z-index:9998;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.055'/%3E%3C/svg%3E")}
+
+#particle-canvas{position:fixed;inset:0;pointer-events:none;z-index:1}
+
+/* ═══════ HERO ═══════ */
+.hero{position:relative;min-height:100vh;display:flex;flex-direction:column;
+  align-items:center;justify-content:flex-start;padding:64px 24px 90px;overflow:hidden;z-index:2}
+.hero-glow{position:absolute;top:0;left:50%;transform:translateX(-50%);width:760px;height:760px;
+  background:radial-gradient(ellipse at 50% 38%,rgba(200,148,63,.14) 0%,rgba(150,70,10,.05) 48%,transparent 72%);
+  pointer-events:none}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:translateY(0)}}
+
+.hero-eyebrow{font-size:10.5px;font-weight:500;letter-spacing:.36em;text-transform:uppercase;
+  color:var(--amber-soft);margin-bottom:24px;opacity:0;animation:fadeUp 1s ease .3s forwards}
+.hero-title{font-family:'Playfair Display',serif;font-size:clamp(28px,4.8vw,60px);font-weight:400;
+  line-height:1.14;text-align:center;color:var(--ivory);max-width:660px;letter-spacing:-.022em;
+  margin-bottom:16px;opacity:0;animation:fadeUp 1s ease .5s forwards}
+.hero-title em{font-style:italic;color:var(--amber-soft)}
+.hero-sub{font-family:'Cormorant Garamond',serif;font-size:clamp(16px,2vw,21px);font-weight:300;
+  font-style:italic;color:rgba(250,246,239,.52);text-align:center;max-width:450px;
+  line-height:1.65;margin-bottom:52px;opacity:0;animation:fadeUp 1s ease .7s forwards}
+
+/* ═══════ JAR ═══════ */
+.jar-scene{position:relative;width:min(400px,86vw);opacity:0;animation:fadeUp 1.3s ease .9s forwards}
+.jar-svg-wrap{position:relative;width:100%;aspect-ratio:420/540;z-index:5;pointer-events:none}
+.jar-svg-wrap svg{position:absolute;inset:0;width:100%;height:100%}
+
+/* Make only the jar lid clickable */
+#jarLid {
+  pointer-events: auto;
+}
+
+/* Notes overlay — positioned to match the jar glass interior */
+/* The jar glass body spans roughly: top 26% → bottom 91%, left 18% → right 82% of .jar-scene */
+.notes-layer{
+  position:absolute;
+  top:26%;left:18%;right:18%;bottom:9%;
+  z-index:10;
+  /* clip to the jar shape - using a path that matches the jar interior */
+  clip-path: polygon(
+    50% 0%,
+    82% 0%,
+    90% 8%,
+    92% 18%,
+    94% 50%,
+    94% 82%,
+    88% 92%,
+    75% 98%,
+    50% 100%,
+    25% 98%,
+    12% 92%,
+    6% 82%,
+    6% 50%,
+    8% 18%,
+    10% 8%,
+    18% 0%
+  );
+  /* debug: outline:1px solid red */
+}
+
+/* ── note chip ── */
+.note{
+  position:absolute;pointer-events:all;cursor:pointer;
+  width:clamp(46px,12%,70px);
+  aspect-ratio:1/1;
+  transform-origin:center center;
+  transition:filter .22s ease,z-index 0s;
+  will-change:transform;
+}
+.note:hover{
+  filter:drop-shadow(0 5px 16px rgba(200,148,63,.7)) brightness(1.14);
+  z-index:50!important;
+  animation-play-state:paused!important;
+}
+.note svg{width:100%;height:100%;display:block;overflow:visible}
+
+@keyframes f0{0%,100%{transform:translateY(0)}  50%{transform:translateY(-13px)}}
+@keyframes f1{0%,100%{transform:translateY(0)}  50%{transform:translateY(-10px)}}
+@keyframes f2{0%,100%{transform:translateY(0)}  50%{transform:translateY(-17px)}}
+@keyframes f3{0%,100%{transform:translateY(0)}  50%{transform:translateY(-9px)}}
+@keyframes f4{0%,100%{transform:translateY(0)}  50%{transform:translateY(-11px)}}
+@keyframes f5{0%,100%{transform:translateY(0)}  50%{transform:translateY(-15px)}}
+@keyframes f6{0%,100%{transform:translateY(0)}  50%{transform:translateY(-10px)}}
+@keyframes f7{0%,100%{transform:translateY(0)}  50%{transform:translateY(-14px)}}
+@keyframes f8{0%,100%{transform:translateY(0)}  50%{transform:translateY(-12px)}}
+@keyframes f9{0%,100%{transform:translateY(0)}  50%{transform:translateY(-8px)}}
+
+/* ═══════ MEMORY CARD MODAL ═══════ */
+.overlay{position:fixed;inset:0;z-index:5000;display:flex;align-items:center;justify-content:center;padding:20px;
+  background:rgba(8,4,1,0);backdrop-filter:blur(0px);-webkit-backdrop-filter:blur(0px);
+  pointer-events:none;transition:background .5s ease,backdrop-filter .5s ease,-webkit-backdrop-filter .5s ease}
+.overlay.open{background:rgba(8,4,1,.87);backdrop-filter:blur(16px) saturate(.7);
+  -webkit-backdrop-filter:blur(16px) saturate(.7);pointer-events:all}
+
+/* The card unfolds: starts as a folded sliver, opens into full card */
+.mem-card{
+  position:relative;max-width:500px;width:100%;
+  background:linear-gradient(145deg,#fffbef 0%,#f8ecd6 35%,#f3dfbc 100%);
+  border-radius:12px;
+  padding:clamp(40px,8vw,70px) clamp(32px,7vw,60px) clamp(36px,7vw,58px);
+  box-shadow:
+    0 0 0 1px rgba(180,130,55,.18),
+    0 60px 120px rgba(0,0,0,.65),
+    0 10px 40px rgba(200,148,63,.15),
+    inset 0 2px 0 rgba(255,255,255,.7);
+  opacity:0;
+  transform: scale(0.2) translateY(100px);
+  overflow: hidden;
+}
+/* Add subtle texture overlay */
+.mem-card::before{
+  content:'';position:absolute;inset:0;border-radius:12px;
+  background-image:
+    repeating-linear-gradient(180deg,transparent 0,transparent 28px,rgba(180,130,55,.08) 29px,rgba(180,130,55,.08) 30px),
+    linear-gradient(135deg,rgba(255,255,255,.1) 0%,transparent 50%,rgba(0,0,0,.02) 100%);
+  pointer-events:none;
+}
+/* left margin */
+.mem-card::after{
+  content:'';position:absolute;top:0;left:80px;bottom:0;width:2px;
+  background:linear-gradient(180deg,transparent 0%,rgba(200,90,70,.18) 10%,rgba(200,90,70,.18) 90%,transparent 100%);
+  pointer-events:none;
+}
+
+.card-close{position:absolute;top:18px;right:20px;background:none;border:none;cursor:pointer;
+  font-size:22px;color:var(--brown);opacity:.3;transition:all .25s ease;padding:8px 12px;border-radius:50%;
+  width:40px;height:40px;display:flex;align-items:center;justify-content:center}
+.card-close:hover{opacity:.9;background:rgba(100,60,20,.08);transform:rotate(90deg)}
+
+.card-eyebrow{font-size:9.5px;font-weight:600;letter-spacing:.32em;text-transform:uppercase;
+  color:var(--rose);opacity:.78;margin-bottom:22px}
+.card-headline{font-family:'Playfair Display',serif;font-size:clamp(20px,3.8vw,30px);font-weight:400;
+  font-style:italic;color:var(--brown-dark);line-height:1.22;margin-bottom:20px;letter-spacing:-.015em}
+.card-rule{width:42px;height:1.5px;background:linear-gradient(90deg,var(--amber),rgba(200,148,63,0));margin-bottom:24px}
+.card-body{font-family:'Cormorant Garamond',serif;font-size:clamp(17px,2.3vw,20px);font-weight:400;
+  line-height:1.88;color:var(--ink-soft);letter-spacing:.01em}
+.card-sig{margin-top:32px;font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:var(--brown);opacity:.72}
+.card-seal{position:absolute;bottom:-20px;right:28px;width:42px;height:42px;pointer-events:none;
+  filter:drop-shadow(0 4px 8px rgba(120,70,20,.3))}
+
+/* ═══════ CREATE JAR BTN ═══════ */
+.create-jar-btn{
+  display:inline-flex;align-items:center;gap:10px;margin-top:38px;padding:13px 30px;
+  background:linear-gradient(135deg,#c8943f 0%,#9a6010 100%);
+  border:none;border-radius:3px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;font-size:11.5px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;
+  color:#fdf8ef;box-shadow:0 4px 22px rgba(200,148,63,.3),inset 0 1px 0 rgba(255,220,120,.28);
+  transition:transform .22s cubic-bezier(.34,1.4,.64,1),box-shadow .22s ease,filter .2s;
+  position:relative;z-index:2;opacity:0;animation:fadeUp 1s ease 1.4s forwards
+}
+.create-jar-btn:hover{transform:translateY(-3px) scale(1.03);box-shadow:0 10px 36px rgba(200,148,63,.44),inset 0 1px 0 rgba(255,220,120,.28);filter:brightness(1.08)}
+.create-jar-btn svg{width:15px;height:15px;flex-shrink:0}
+
+.share-jar-btn{
+  display:inline-flex;align-items:center;gap:10px;margin-top:16px;padding:12px 28px;
+  background:transparent;border:1px solid rgba(200,148,63,.35);border-radius:3px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;
+  color:rgba(232,196,122,.75);box-shadow:0 4px 16px rgba(200,148,63,.12);
+  transition:transform .22s cubic-bezier(.34,1.4,.64,1),box-shadow .22s ease,filter .2s,background .2s,border-color .2s;
+  position:relative;z-index:2;opacity:0;animation:fadeUp 1s ease 1.6s forwards
+}
+.share-jar-btn:hover{
+  transform:translateY(-2px) scale(1.02);
+  box-shadow:0 8px 28px rgba(200,148,63,.25);
+  background:rgba(200,148,63,.08);
+  border-color:rgba(200,148,63,.55);
+  color:var(--amber-soft);
+  filter:brightness(1.05)
+}
+.share-jar-btn svg{width:14px;height:14px;flex-shrink:0}
+
+.jar-hint{margin-top:16px;font-family:'Cormorant Garamond',serif;font-size:13px;font-style:italic;
+  color:rgba(232,196,122,.0);letter-spacing:.04em;
+  animation:hintPulse 3.8s ease-in-out 1.8s infinite}
+@keyframes hintPulse{0%,100%{color:rgba(232,196,122,0)}15%,85%{color:rgba(232,196,122,.48)}}
+
+/* Jar lid open animation */
+#jarLid.open {
+  transform: translateY(-140px) rotate(-15deg);
+  opacity: 0.85;
+}
+
+/* Card coming out animation */
+@keyframes cardEmerge {
+  0% {
+    transform: scale(0.2) translateY(100px);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(0.6) translateY(20px);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Apply the emerge animation to the memory card */
+.overlay.open .mem-card {
+  animation: cardEmerge 0.8s cubic-bezier(0.34, 1.5, 0.64, 1) forwards;
+}
+
+/* ═══════ CREATE PANEL ═══════ */
+.create-overlay{position:fixed;inset:0;z-index:6000;display:flex;align-items:center;justify-content:center;
+  padding:20px;background:rgba(6,3,1,.93);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  opacity:0;pointer-events:none;transition:opacity .38s ease}
+.create-overlay.open{opacity:1;pointer-events:all}
+
+.create-panel{background:linear-gradient(158deg,#1c1104 0%,#140c02 100%);border:1px solid rgba(200,148,63,.2);
+  border-radius:6px;max-width:600px;width:100%;max-height:92vh;overflow-y:auto;
+  padding:clamp(26px,5vw,46px);box-shadow:0 40px 100px rgba(0,0,0,.85),0 0 0 1px rgba(200,148,63,.07);
+  transform:translateY(28px);transition:transform .44s cubic-bezier(.34,1.2,.64,1)}
+.create-overlay.open .create-panel{transform:translateY(0)}
+.create-panel::-webkit-scrollbar{width:3px}
+.create-panel::-webkit-scrollbar-track{background:transparent}
+.create-panel::-webkit-scrollbar-thumb{background:rgba(200,148,63,.28);border-radius:2px}
+
+.panel-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px}
+.panel-title{font-family:'Playfair Display',serif;font-size:clamp(19px,3vw,26px);font-weight:400;font-style:italic;color:var(--ivory);line-height:1.25}
+.panel-eyebrow{font-size:9px;font-weight:500;letter-spacing:.3em;text-transform:uppercase;color:rgba(200,148,63,.52);margin-bottom:7px}
+.panel-close{background:none;border:none;cursor:pointer;color:rgba(250,246,239,.35);font-size:20px;padding:4px 8px;transition:color .2s;flex-shrink:0;margin-top:2px}
+.panel-close:hover{color:var(--ivory)}
+
+.recipient-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:26px}
+@media(max-width:460px){.recipient-row{grid-template-columns:1fr}}
+
+.memories-list{display:flex;flex-direction:column;gap:16px;margin-bottom:20px}
+.memory-entry{background:rgba(255,245,220,.04);border:1px solid rgba(200,148,63,.14);border-radius:4px;padding:16px 18px;position:relative;transition:border-color .2s}
+.memory-entry:focus-within{border-color:rgba(200,148,63,.38)}
+
+.entry-num{font-size:9px;font-weight:500;letter-spacing:.24em;text-transform:uppercase;color:rgba(200,148,63,.48);margin-bottom:9px}
+.entry-row{display:flex;flex-direction:column;gap:9px}
+.field-label{font-size:9.5px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:rgba(250,246,239,.32);margin-bottom:4px}
+
+.field-input,.field-textarea{
+  width:100%;background:rgba(255,245,220,.04);border:1px solid rgba(200,148,63,.17);border-radius:3px;
+  color:var(--ivory);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 13px;outline:none;
+  transition:border-color .2s,background .2s}
+.field-input:focus,.field-textarea:focus{border-color:rgba(200,148,63,.52);background:rgba(255,245,220,.07)}
+.field-input::placeholder,.field-textarea::placeholder{color:rgba(250,246,239,.2)}
+.field-textarea{resize:vertical;min-height:78px;line-height:1.6}
+
+.remove-entry{position:absolute;top:12px;right:12px;background:none;border:none;cursor:pointer;
+  color:rgba(200,100,70,.38);font-size:14px;padding:3px 7px;border-radius:3px;transition:color .2s,background .2s;line-height:1}
+.remove-entry:hover{color:rgba(220,90,60,.85);background:rgba(220,80,50,.1)}
+
+.add-memory-btn{display:flex;align-items:center;gap:8px;width:100%;padding:11px 16px;background:transparent;
+  border:1px dashed rgba(200,148,63,.26);border-radius:4px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;
+  color:rgba(200,148,63,.55);transition:border-color .2s,color .2s,background .2s;margin-bottom:26px}
+.add-memory-btn:hover{border-color:rgba(200,148,63,.52);color:rgba(232,196,122,.9);background:rgba(200,148,63,.05)}
+
+.create-actions{display:flex;flex-direction:column;gap:10px}
+.btn-primary{padding:13px 28px;background:linear-gradient(135deg,#c8943f,#9a6010);border:none;border-radius:3px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;
+  color:#fdf8ef;box-shadow:0 4px 20px rgba(200,148,63,.28);transition:transform .2s,box-shadow .2s,filter .2s}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(200,148,63,.44);filter:brightness(1.08)}
+.btn-secondary{padding:12px 28px;background:transparent;border:1px solid rgba(200,148,63,.28);border-radius:3px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;
+  color:rgba(232,196,122,.65);transition:border-color .2s,color .2s,background .2s}
+.btn-secondary:hover{border-color:rgba(200,148,63,.58);color:var(--amber-soft);background:rgba(200,148,63,.06)}
+
+/* ═══════ SHARE OVERLAY ═══════ */
+.share-overlay{position:fixed;inset:0;z-index:7000;display:flex;align-items:center;justify-content:center;padding:20px;
+  background:rgba(6,3,1,.95);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+  opacity:0;pointer-events:none;transition:opacity .35s ease}
+.share-overlay.open{opacity:1;pointer-events:all}
+
+.share-card{background:linear-gradient(158deg,#1c1104,#140c02);border:1px solid rgba(200,148,63,.2);
+  border-radius:6px;max-width:430px;width:100%;padding:clamp(32px,6vw,46px) clamp(24px,5vw,40px);text-align:center;
+  box-shadow:0 40px 80px rgba(0,0,0,.85);
+  transform:scale(.9);transition:transform .42s cubic-bezier(.34,1.3,.64,1)}
+.share-overlay.open .share-card{transform:scale(1)}
+
+.share-icon{width:54px;height:54px;background:linear-gradient(135deg,rgba(200,148,63,.18),rgba(150,90,20,.08));
+  border:1px solid rgba(200,148,63,.28);border-radius:50%;display:flex;align-items:center;justify-content:center;
+  margin:0 auto 18px;font-size:22px}
+.share-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:400;font-style:italic;color:var(--ivory);margin-bottom:9px}
+.share-sub{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:300;font-style:italic;
+  color:rgba(250,246,239,.48);margin-bottom:24px;line-height:1.62}
+
+.share-link-wrap{display:flex;align-items:center;gap:8px;background:rgba(255,245,220,.04);
+  border:1px solid rgba(200,148,63,.18);border-radius:3px;padding:9px 12px;margin-bottom:22px}
+.share-link{flex:1;font-family:'DM Sans',sans-serif;font-size:11.5px;color:rgba(232,196,122,.78);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:none;border:none;outline:none;cursor:text;letter-spacing:.025em}
+.copy-btn{background:none;border:1px solid rgba(200,148,63,.32);border-radius:2px;padding:5px 12px;
+  font-size:9.5px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--amber-soft);
+  cursor:pointer;transition:background .2s,color .2s;white-space:nowrap;flex-shrink:0}
+.copy-btn:hover{background:rgba(200,148,63,.15)}
+.copy-btn.copied{color:#7ed882;border-color:rgba(126,216,130,.38)}
+
+.share-btns{display:flex;flex-direction:column;gap:9px}
+.share-via{display:flex;align-items:center;justify-content:center;gap:9px;padding:11px;
+  background:rgba(255,245,220,.04);border:1px solid rgba(200,148,63,.16);border-radius:3px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;
+  color:rgba(232,196,122,.65);transition:background .2s,border-color .2s,color .2s}
+.share-via:hover{background:rgba(200,148,63,.09);border-color:rgba(200,148,63,.38);color:var(--amber-soft)}
+
+.share-close-btn{margin-top:16px;background:none;border:none;cursor:pointer;
+  font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:rgba(250,246,239,.25);
+  font-family:'DM Sans',sans-serif;transition:color .2s}
+.share-close-btn:hover{color:rgba(250,246,239,.6)}
+
+/* ═══════ CLOSING ═══════ */
+.closing{position:relative;z-index:2;text-align:center;padding:90px 24px 110px;
+  display:flex;flex-direction:column;align-items:center;gap:18px;
+  opacity:0;transform:translateY(34px);transition:opacity 1.3s ease,transform 1.3s ease}
+.closing.visible{opacity:1;transform:translateY(0)}
+.closing-line{width:1px;height:52px;background:linear-gradient(180deg,transparent,var(--amber),transparent);margin-bottom:2px}
+.closing-sub{font-size:9.5px;font-weight:500;letter-spacing:.34em;text-transform:uppercase;color:rgba(200,148,63,.38)}
+.closing-quote{font-family:'Playfair Display',serif;font-size:clamp(23px,3.8vw,42px);font-weight:400;font-style:italic;
+  color:var(--ivory);line-height:1.3;max-width:560px;letter-spacing:-.02em}
+.closing-quote em{color:var(--amber-soft)}
+.footer-txt{font-size:10px;font-weight:400;letter-spacing:.24em;text-transform:uppercase;color:rgba(200,148,63,.26);margin-top:48px}
+</style>
+</head>
+<body>
+<canvas id="particle-canvas"></canvas>
+
+<!-- ══ HERO ══ -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <p class="hero-eyebrow">A gift for you</p>
+  <h1 class="hero-title">Some memories deserve<br>to be <em>held forever.</em></h1>
+  <p class="hero-sub">A jar filled with moments I never want you to forget.</p>
+
+  <div class="jar-scene" id="jarScene">
+    <!-- The glass jar -->
+    <div class="jar-svg-wrap">
+      <svg viewBox="0 0 420 540" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <!-- Premium jar gradients -->
+          <linearGradient id="gBody" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stop-color="#d49a4a" stop-opacity=".34"/>
+            <stop offset="8%"   stop-color="#ffeac8" stop-opacity=".56"/>
+            <stop offset="25%"  stop-color="#fffef8" stop-opacity=".22"/>
+            <stop offset="48%"  stop-color="#ffe4b0" stop-opacity=".18"/>
+            <stop offset="72%"  stop-color="#f0c070" stop-opacity=".36"/>
+            <stop offset="100%" stop-color="#9a6028" stop-opacity=".30"/>
+          </linearGradient>
+          <linearGradient id="gLid" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="#fff0b8"/>
+            <stop offset="35%"  stop-color="#f2c878"/>
+            <stop offset="65%"  stop-color="#d49838"/>
+            <stop offset="100%" stop-color="#8a4c08"/>
+          </linearGradient>
+          <linearGradient id="gLidTop" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"  stop-color="#f2c868"/>
+            <stop offset="25%" stop-color="#fff8d0"/>
+            <stop offset="60%" stop-color="#fae8a0"/>
+            <stop offset="100%" stop-color="#b87820"/>
+          </linearGradient>
+          <radialGradient id="gInner" cx="50%" cy="38%" r="58%">
+            <stop offset="0%"   stop-color="#ffecc0" stop-opacity=".48"/>
+            <stop offset="40%"  stop-color="#ffd060" stop-opacity=".20"/>
+            <stop offset="100%" stop-color="#ff8828" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="gBotShine" cx="50%" cy="22%" r="62%">
+            <stop offset="0%"   stop-color="#fffae8" stop-opacity=".6"/>
+            <stop offset="100%" stop-color="#f0a848" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="gFloor" cx="50%" cy="50%" r="55%">
+            <stop offset="0%"   stop-color="#e09838" stop-opacity=".6"/>
+            <stop offset="100%" stop-color="#3a1808" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="gBand" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"  stop-color="#b07028"/>
+            <stop offset="40%" stop-color="#8a5010"/>
+            <stop offset="100%" stop-color="#4a2008"/>
+          </linearGradient>
+          <linearGradient id="gHigh" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stop-color="white" stop-opacity="0"/>
+            <stop offset="15%"  stop-color="white" stop-opacity=".48"/>
+            <stop offset="40%"  stop-color="white" stop-opacity=".20"/>
+            <stop offset="70%"  stop-color="white" stop-opacity=".08"/>
+            <stop offset="100%" stop-color="white" stop-opacity="0"/>
+          </linearGradient>
+          <clipPath id="jarClip">
+            <path d="M92,158 Q86,175 84,215 L82,435 Q82,462 95,475 Q110,488 210,488 Q310,488 325,475 Q338,462 338,435 L336,215 Q334,175 328,158 Z"/>
+          </clipPath>
+        </defs>
+
+        <!-- neck band -->
+        <rect x="88" y="144" width="244" height="18" rx="3" fill="url(#gBand)" opacity=".96"/>
+        <rect x="88" y="144" width="244" height="5"  rx="2" fill="white" opacity=".22"/>
+
+        <!-- lid (clickable) - premium -->
+        <g id="jarLid" style="cursor: pointer; transform-origin: 210px 116px; transition: transform 0.8s cubic-bezier(0.34, 1.5, 0.64, 1), opacity 0.6s ease;">
+          <rect x="82" y="84" width="256" height="64" rx="9" fill="url(#gLid)"/>
+          <ellipse cx="210" cy="87" rx="128" ry="19" fill="url(#gLidTop)"/>
+          <!-- premium knob -->
+          <ellipse cx="210" cy="81" rx="32" ry="10" fill="#fff0b8" opacity=".98"/>
+          <ellipse cx="210" cy="78" rx="24" ry="7"  fill="#fae8a0"/>
+          <ellipse cx="210" cy="75" rx="16" ry="5"  fill="#fff8d0"/>
+          <ellipse cx="210" cy="73" rx="10" ry="3.2" fill="#ffffff" opacity=".45"/>
+          <ellipse cx="198" cy="76" rx="7"  ry="2.8" fill="white" opacity=".65"/>
+          <rect x="96" y="90" width="82" height="9" rx="4.5" fill="white" opacity=".28"/>
+          <rect x="82" y="140" width="256" height="9" rx="3" fill="url(#gBand)"/>
+        </g>
+
+        <!-- base dark fill - deeper -->
+        <path d="M92,158 Q86,175 84,215 L82,435 Q82,462 95,475 Q110,488 210,488 Q310,488 325,475 Q338,462 338,435 L336,215 Q334,175 328,158 Z"
+              fill="#1f0f02" opacity=".65"/>
+
+        <!-- inner warm glow (clipped) - more vibrant -->
+        <ellipse cx="210" cy="320" rx="175" ry="215" fill="url(#gInner)" clip-path="url(#jarClip)"/>
+        <!-- bottom pool - brighter -->
+        <ellipse cx="210" cy="472" rx="125" ry="22" fill="url(#gBotShine)" clip-path="url(#jarClip)"/>
+        <!-- floor - deeper -->
+        <ellipse cx="210" cy="494" rx="140" ry="18" fill="url(#gFloor)"/>
+
+        <!-- glass overlay - premium -->
+        <path d="M92,158 Q86,175 84,215 L82,435 Q82,462 95,475 Q110,488 210,488 Q310,488 325,475 Q338,462 338,435 L336,215 Q334,175 328,158 Z"
+              fill="url(#gBody)"/>
+        <!-- highlight sweep - premium -->
+        <path d="M92,158 Q86,175 84,215 L82,435 Q82,462 95,475 Q110,488 210,488 Q310,488 325,475 Q338,462 338,435 L336,215 Q334,175 328,158 Z"
+              fill="url(#gHigh)"/>
+
+        <!-- left bright edge - premium -->
+        <path d="M92,165 Q86,182 84,218 L83,434 Q83,460 94,473" fill="none" stroke="white" stroke-width="4" stroke-opacity=".34" stroke-linecap="round"/>
+        <!-- right dim edge -->
+        <path d="M328,165 Q334,182 336,218 L337,434 Q337,460 326,473" fill="none" stroke="white" stroke-width="2" stroke-opacity=".12" stroke-linecap="round"/>
+        <!-- refraction - premium -->
+        <line x1="165" y1="165" x2="146" y2="322" stroke="white" stroke-width="1.8" stroke-opacity=".14"/>
+        <line x1="265" y1="165" x2="280" y2="330" stroke="white" stroke-width="1.4" stroke-opacity=".08"/>
+
+        <!-- animated glints - premium -->
+        <ellipse cx="120" cy="212" rx="7" ry="24" fill="white" opacity=".28">
+          <animate attributeName="opacity" values=".28;.45;.28" dur="2.4s" repeatCount="indefinite"/>
+        </ellipse>
+        <ellipse cx="114" cy="348" rx="4.5" ry="15" fill="white" opacity=".18">
+          <animate attributeName="opacity" values=".18;.34;.18" dur="4.0s" repeatCount="indefinite"/>
+        </ellipse>
+        <ellipse cx="312" cy="278" rx="4" ry="11" fill="white" opacity=".14">
+          <animate attributeName="opacity" values=".14;.26;.14" dur="5.2s" repeatCount="indefinite"/>
+        </ellipse>
+
+        <!-- golden motes - premium, more vibrant -->
+        <circle cx="168" cy="200" r="2.2" fill="#ffe470" opacity=".75">
+          <animate attributeName="cy" values="200;175;200" dur="3.2s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values=".75;1;.75" dur="3.2s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="252" cy="248" r="1.6" fill="#ffeaa0" opacity=".62">
+          <animate attributeName="cy" values="248;225;248" dur="4.8s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values=".62;1;.62" dur="4.8s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="192" cy="318" r="1.8" fill="#ffe470" opacity=".55">
+          <animate attributeName="cy" values="318;292;318" dur="3.0s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values=".55;.92;.55" dur="3.0s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="242" cy="170" r="1.4" fill="#fffae0" opacity=".82">
+          <animate attributeName="cy" values="170;148;170" dur="5.0s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values=".82;1;.82" dur="5.0s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="278" cy="308" r="1.9" fill="#ffe470" opacity=".5">
+          <animate attributeName="cy" values="308;282;308" dur="4.0s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values=".5;.85;.5" dur="4.0s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="145" cy="390" r="1.6" fill="#ffd860" opacity=".42">
+          <animate attributeName="cy" values="390;365;390" dur="3.8s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values=".42;.78;.42" dur="3.8s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="292" cy="410" r="1.4" fill="#ffe490" opacity=".5">
+          <animate attributeName="cy" values="410;385;410" dur="5.6s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values=".5;.9;.5" dur="5.6s" repeatCount="indefinite"/>
+        </circle>
+        <!-- extra premium motes -->
+        <circle cx="220" cy="230" r="1.2" fill="#fff8c0" opacity=".7">
+          <animate attributeName="cy" values="230;208;230" dur="4.4s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values=".7;1;.7" dur="4.4s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="180" cy="380" r="1.0" fill="#ffe070" opacity=".55">
+          <animate attributeName="cy" values="380;358;380" dur="3.6s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values=".55;.88;.55" dur="3.6s" repeatCount="indefinite"/>
+        </circle>
+
+        <!-- label -->
+        <text x="210" y="406" text-anchor="middle" font-family="'Playfair Display',serif" font-size="14" font-style="italic" fill="#f5d880" fill-opacity=".72">Moments</text>
+        <text x="210" y="426" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="8" letter-spacing=".2em" fill="#c89840" fill-opacity=".55">FOR MOM</text>
+
+        <!-- bottom rim -->
+        <ellipse cx="210" cy="490" rx="130" ry="15" fill="#7a4c18" opacity=".48"/>
+        <ellipse cx="210" cy="490" rx="108" ry="9"  fill="#4a2c08" opacity=".55"/>
+        <ellipse cx="176" cy="486" rx="36"  ry="5.5" fill="white"  opacity=".11"/>
+        <!-- ground shadow -->
+        <ellipse cx="210" cy="512" rx="138" ry="13" fill="#050200" opacity=".5"/>
+      </svg>
+    </div>
+    <!-- Notes float here, positioned over the glass body -->
+    <div class="notes-layer" id="notesLayer"></div>
+  </div>
+
+  <p class="jar-hint">✦ Click any note to open it ✦</p>
+
+  <button class="create-jar-btn" id="createJarBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 5v14M5 12h14"/>
+    </svg>
+    Create Your Memory Jar
+  </button>
+
+  <button class="share-jar-btn" id="shareJarBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="18" cy="5" r="3"/>
+      <circle cx="6" cy="12" r="3"/>
+      <circle cx="18" cy="19" r="3"/>
+      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+    </svg>
+    Share This Jar
+  </button>
+</section>
+
+<!-- ══ CLOSING ══ -->
+<section class="closing" id="closing">
+  <div class="closing-line"></div>
+  <p class="closing-sub">A lifetime of gratitude</p>
+  <blockquote class="closing-quote">"You turned ordinary days<br>into <em>extraordinary memories.</em>"</blockquote>
+  <p class="footer-txt">For the woman who turned moments into memories.</p>
+</section>
+
+<!-- ══ MEMORY CARD MODAL ══ -->
+<div class="overlay" id="overlay" role="dialog" aria-modal="true">
+  <div class="mem-card" id="memCard">
+    <button class="card-close" id="cardClose" aria-label="Close memory">✕</button>
+    <p class="card-eyebrow" id="cEyebrow"></p>
+    <h2 class="card-headline" id="cTitle"></h2>
+    <div class="card-rule"></div>
+    <p class="card-body" id="cBody"></p>
+    <p class="card-sig" id="cSig"></p>
+    <svg class="card-seal" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="20" cy="20" r="18" fill="#c8943f" opacity=".88"/>
+      <circle cx="20" cy="20" r="14" fill="none" stroke="#f8e090" stroke-width="1" stroke-opacity=".48"/>
+      <text x="20" y="26" text-anchor="middle" font-size="13" font-family="serif" fill="#fdf8e0">♡</text>
+    </svg>
+  </div>
+</div>
+
+<!-- ══ CREATE PANEL ══ -->
+<div class="create-overlay" id="createOverlay" role="dialog" aria-modal="true">
+  <div class="create-panel" id="createPanel">
+    <div class="panel-header">
+      <div>
+        <p class="panel-eyebrow">Your memory jar</p>
+        <h2 class="panel-title">What moments would<br>you like to preserve?</h2>
+      </div>
+      <button class="panel-close" id="closePanelBtn" aria-label="Close">✕</button>
+    </div>
+
+    <div class="recipient-row">
+      <div>
+        <p class="field-label">Jar title</p>
+        <input class="field-input" type="text" id="jarTitle" placeholder="e.g. For You, Mom" maxlength="60"/>
+      </div>
+      <div>
+        <p class="field-label">From</p>
+        <input class="field-input" type="text" id="jarFrom" placeholder="Your name" maxlength="40"/>
+      </div>
+    </div>
+
+    <div class="memories-list" id="memoriesList"></div>
+
+    <button class="add-memory-btn" id="addMemoryBtn">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      Add Another Memory
+    </button>
+
+    <div class="create-actions">
+      <button class="btn-primary" id="generateJarBtn">✦ &nbsp; Generate & Share My Jar</button>
+      <button class="btn-secondary" id="previewJarBtn">Preview in Jar First</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SHARE OVERLAY ══ -->
+<div class="share-overlay" id="shareOverlay" role="dialog" aria-modal="true">
+  <div class="share-card">
+    <div class="share-icon">🫙</div>
+    <h2 class="share-title">Your jar is ready.</h2>
+    <p class="share-sub">Share this link and let them open<br>every note, one by one.</p>
+    <div class="share-link-wrap">
+      <input class="share-link" id="shareLink" readonly value="" aria-label="Shareable link"/>
+      <button class="copy-btn" id="copyLinkBtn">Copy</button>
+    </div>
+    <div class="share-btns">
+      <button class="share-via" id="shareWhatsapp">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Share via WhatsApp
+      </button>
+      <button class="share-via" id="shareEmail">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+        Share via Email
+      </button>
+    </div>
+    <button class="share-close-btn" id="shareCloseBtn">Done</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════
+//  DATA
+// ═══════════════════════════
+const DEFAULT_MEMORIES = [
+  {title:"Thank you for every sleepless night.",body:"I never knew how many nights you stayed awake so I could sleep peacefully. Every storm, every nightmare, every fever — you were there, quiet and steady, making the dark feel safe. I owe you a thousand nights of rest.",date:"Always & forever",sig:"— Your child, with endless gratitude",color:"cream"},
+  {title:"You made ordinary days magical.",body:"A Tuesday could become an adventure just because you decided it would be. The songs you hummed in the kitchen, the way you set the table like it was a celebration — you were the magic, Mom.",date:"Every single day",sig:"— Written with a full heart",color:"rose"},
+  {title:"I still hear your voice calling me home.",body:"No matter how far I go, there's a sound that lives in me — your voice at the door, calling my name when dinner was ready, when the sun was going down. It's the sound of belonging. I carry it everywhere.",date:"Echoing still",sig:"— Home always sounds like you",color:"amber"},
+  {title:"You always believed in me first.",body:"Before I believed in myself, before anyone else saw it — you did. You held that belief like a lantern in the dark, never letting it go even when I couldn't see what you saw. I became who I am because someone believed.",date:"Before I knew myself",sig:"— Your truest believer",color:"ivory"},
+  {title:"You made the hard times feel safe.",body:"There were moments I thought the world was ending — and you sat beside me, steady as stone. You didn't always have the answers, but your presence alone said: we will get through this. And we always did.",date:"Through every storm",sig:"— Forever your shelter",color:"cream"},
+  {title:"I learned what love looks like from you.",body:"Love, I now understand, is the thousand quiet things you did without being asked. The folded laundry. The packed lunches. The questions about my day. The way you remembered small things I mentioned once.",date:"Learned in every small thing",sig:"— Still learning from you",color:"rose"},
+  {title:"You noticed things no one else did.",body:"You could tell from a single glance when something was wrong. You noticed when I was quieter than usual, when my eyes were different, when I needed something I couldn't name. You knew me before I knew myself.",date:"Seen and understood",sig:"— Grateful to be known",color:"amber"},
+  {title:"Home has always sounded like your voice.",body:"I've lived in different places, walked through different doors — but home is not a building. It's the warmth in your laugh, the comfort in your stories, the way you say my name. Wherever you are is where home is.",date:"No matter where I am",sig:"— Always finding my way back",color:"ivory"},
+  {title:"Your sacrifices became my possibilities.",body:"Every choice you made for me — the opportunities you didn't take, the comforts you set aside — built the ground I stand on. Every step I take forward, I take on a foundation you built.",date:"Built on your love",sig:"— Walking forward for both of us",color:"cream"},
+  {title:"I wish I'd said this more often.",body:"There were so many days I meant to say it — how grateful I am, how deeply I love you — and let them pass in the busyness of ordinary life. So here it is, written down so it can't be unsaid: thank you. I love you. You are everything.",date:"Said now, and always",sig:"— More than words can hold",color:"rose"}
+];
+
+// 10 positions - natural like real letters at bottom of jar
+const NOTE_POS = [
+  {l:8,  t:58, z:4, r:-12},
+  {l:55, t:62, z:5, r:8},
+  {l:35, t:55, z:6, r:5},
+  {l:70, t:50, z:4, r:-15},
+  {l:15, t:45, z:5, r:10},
+  {l:45, t:48, z:6, r:-5},
+  {l:60, t:40, z:5, r:12},
+  {l:25, t:38, z:4, r:-8},
+  {l:50, t:32, z:6, r:3},
+  {l:32, t:28, z:5, r:-6}
+];
+
+const PALETTES = {
+  cream:{bg:"#f5ede0",fold:"#ddc8a8",line:"#c8a87a",sh:"#a07848"},
+  rose: {bg:"#f0d5c8",fold:"#d8b4a0",line:"#c8907a",sh:"#986050"},
+  amber:{bg:"#f5e0a8",fold:"#d8c078",line:"#b89040",sh:"#906820"},
+  ivory:{bg:"#fdf4dc",fold:"#e8dabc",line:"#c8a060",sh:"#a07838"}
+};
+
+let activeMemories = [...DEFAULT_MEMORIES];
+
+// ═══════════════════════════
+//  NOTE SVG
+// ═══════════════════════════
+function noteSVG(colorKey) {
+  const p = PALETTES[colorKey] || PALETTES.cream;
+  return `<svg viewBox="0 0 72 64" xmlns="http://www.w3.org/2000/svg" overflow="visible">
+    <rect x="5" y="7" width="60" height="52" rx="2.5" fill="${p.sh}" opacity=".20"/>
+    <rect x="2" y="2" width="60" height="54" rx="2.5" fill="${p.bg}"/>
+    <polygon points="48,2 62,2 62,16" fill="${p.fold}"/>
+    <line x1="48" y1="2" x2="62" y2="16" stroke="${p.sh}" stroke-width=".65" opacity=".45"/>
+    <line x1="8"  y1="22" x2="52" y2="22" stroke="${p.line}" stroke-width=".9" opacity=".44"/>
+    <line x1="8"  y1="31" x2="46" y2="31" stroke="${p.line}" stroke-width=".9" opacity=".36"/>
+    <line x1="8"  y1="40" x2="50" y2="40" stroke="${p.line}" stroke-width=".9" opacity=".30"/>
+    <line x1="18" y1="2"  x2="18" y2="56" stroke="${p.line}" stroke-width=".5" opacity=".16"/>
+    <text x="12" y="16" font-size="8.5" font-family="serif" fill="${p.line}" opacity=".65">♡</text>
+  </svg>`;
+}
+
+// ═══════════════════════════
+//  RENDER NOTES
+// ═══════════════════════════
+function renderNotes(mems) {
+  const layer = document.getElementById('notesLayer');
+  layer.innerHTML = '';
+  mems.forEach((mem, i) => {
+    const pos = NOTE_POS[i % NOTE_POS.length];
+    const el = document.createElement('div');
+    el.className = 'note';
+    el.style.cssText = `left:${pos.l}%;top:${pos.t}%;z-index:${pos.z};
+      transform: rotate(${pos.r}deg);
+      animation-name:f${i%10};
+      animation-duration:${3.8+(i*0.37)}s;
+      animation-timing-function:ease-in-out;
+      animation-iteration-count:infinite;
+      animation-delay:${(i*0.28).toFixed(2)}s`;
+    el.innerHTML = noteSVG(mem.color||'cream');
+    el.setAttribute('role','button');
+    el.setAttribute('tabindex','0');
+    el.setAttribute('aria-label',`Open memory: ${mem.title}`);
+    el.addEventListener('click', () => openMemory(i, mems));
+    el.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' ') openMemory(i, mems); });
+    layer.appendChild(el);
+  });
+}
+
+// Track if jar is open
+let isJarOpen = false;
+
+// ═══════════════════════════
+//  OPEN / CLOSE JAR LID
+// ═══════════════════════════
+function openJarLid() {
+  const lid = document.getElementById('jarLid');
+  if (!isJarOpen) {
+    lid.classList.add('open');
+    isJarOpen = true;
+  }
+}
+
+function closeJarLid() {
+  const lid = document.getElementById('jarLid');
+  if (isJarOpen) {
+    lid.classList.remove('open');
+    isJarOpen = false;
+  }
+}
+
+// Add click listener to jar lid
+document.addEventListener('DOMContentLoaded', () => {
+  const lid = document.getElementById('jarLid');
+  if (lid) {
+    lid.addEventListener('click', () => {
+      if (isJarOpen) {
+        closeJarLid();
+      } else {
+        openJarLid();
+      }
+    });
+  }
+});
+
+// ═══════════════════════════
+//  OPEN / CLOSE MEMORY
+// ═══════════════════════════
+function openMemory(idx, mems) {
+  const m = mems[idx];
+  document.getElementById('cEyebrow').textContent = m.date || 'A moment in time';
+  document.getElementById('cTitle').textContent   = m.title;
+  document.getElementById('cBody').textContent    = m.body;
+  document.getElementById('cSig').textContent     = m.sig || '— With all my love';
+  
+  // First open the jar lid if it's not already open
+  if (!isJarOpen) {
+    openJarLid();
+    // Wait for the lid to open before showing the card
+    setTimeout(() => {
+      showMemoryCard();
+    }, 800);
+  } else {
+    // Jar is already open, show the card immediately
+    showMemoryCard();
+  }
+}
+
+function showMemoryCard() {
+  const ov = document.getElementById('overlay');
+  ov.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('cardClose').focus(), 120);
+}
+
+function closeMemory() {
+  document.getElementById('overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  // Close the jar lid after the card is closed
+  setTimeout(() => {
+    closeJarLid();
+  }, 300);
+}
+document.getElementById('cardClose').addEventListener('click', closeMemory);
+document.getElementById('overlay').addEventListener('click', e => { if(e.target===e.currentTarget) closeMemory(); });
+
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape') { closeMemory(); closeCreatePanel(); closeShare(); }
+});
+
+// ═══════════════════════════
+//  CREATE PANEL
+// ═══════════════════════════
+let customEntries = [{title:'',body:''}];
+
+function escH(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function buildEntry(i) {
+  const d = document.createElement('div');
+  d.className = 'memory-entry'; d.dataset.idx = i;
+  const e = customEntries[i]||{title:'',body:''};
+  d.innerHTML = `
+    <p class="entry-num">Memory ${i+1}</p>
+    ${i>0?`<button class="remove-entry" data-idx="${i}" aria-label="Remove memory ${i+1}">✕</button>`:''}
+    <div class="entry-row">
+      <div>
+        <p class="field-label">Opening line</p>
+        <input class="field-input" type="text" placeholder="e.g. Thank you for every sleepless night." maxlength="90" data-field="title" data-idx="${i}" value="${escH(e.title)}"/>
+      </div>
+      <div>
+        <p class="field-label">Message</p>
+        <textarea class="field-textarea" placeholder="Write your heartfelt message here…" rows="3" maxlength="600" data-field="body" data-idx="${i}">${escH(e.body)}</textarea>
+      </div>
+    </div>`;
+  return d;
+}
+
+function syncEntries() {
+  const list = document.getElementById('memoriesList');
+  list.querySelectorAll('[data-field]').forEach(el => {
+    const idx = +el.dataset.idx;
+    customEntries[idx] = customEntries[idx]||{};
+    customEntries[idx][el.dataset.field] = el.value;
+  });
+}
+
+function rebuildList() {
+  const list = document.getElementById('memoriesList');
+  list.innerHTML = '';
+  customEntries.forEach((_, i) => list.appendChild(buildEntry(i)));
+  list.querySelectorAll('.remove-entry').forEach(btn => {
+    btn.addEventListener('click', () => { syncEntries(); customEntries.splice(+btn.dataset.idx,1); rebuildList(); });
+  });
+  list.querySelectorAll('[data-field]').forEach(el => {
+    el.addEventListener('input', () => { customEntries[+el.dataset.idx][el.dataset.field] = el.value; });
+  });
+}
+
+function openCreatePanel() {
+  customEntries = [{title:'',body:''}];
+  rebuildList();
+  document.getElementById('jarTitle').value = '';
+  document.getElementById('jarFrom').value  = '';
+  document.getElementById('createOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('jarTitle').focus(), 200);
+}
+function closeCreatePanel() {
+  document.getElementById('createOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('createJarBtn').addEventListener('click', openCreatePanel);
+document.getElementById('closePanelBtn').addEventListener('click', closeCreatePanel);
+document.getElementById('createOverlay').addEventListener('click', e => { if(e.target===e.currentTarget) closeCreatePanel(); });
+
+// Share button functionality
+document.getElementById('shareJarBtn').addEventListener('click', () => {
+  openShare(activeMemories);
+});
+
+document.getElementById('addMemoryBtn').addEventListener('click', () => {
+  syncEntries();
+  if(customEntries.length >= 20) return;
+  customEntries.push({title:'',body:''});
+  rebuildList();
+  setTimeout(() => document.getElementById('memoriesList').lastElementChild.scrollIntoView({behavior:'smooth',block:'center'}), 80);
+});
+
+function buildCustomMemories() {
+  const cols = ['cream','rose','amber','ivory'];
+  const jt = document.getElementById('jarTitle').value.trim();
+  const jf = document.getElementById('jarFrom').value.trim();
+  return customEntries
+    .filter(e => e.title && e.title.trim())
+    .map((e,i) => ({
+      title: e.title.trim(),
+      body:  e.body.trim() || 'A moment worth remembering.',
+      date:  jt || 'A memory, preserved',
+      sig:   jf ? `— ${jf}` : '— With all my love',
+      color: cols[i%cols.length]
+    }));
+}
+
+document.getElementById('previewJarBtn').addEventListener('click', () => {
+  syncEntries();
+  const v = buildCustomMemories();
+  if(!v.length){ alert('Add at least one memory before previewing.'); return; }
+  activeMemories = v;
+  renderNotes(activeMemories);
+  closeCreatePanel();
+});
+
+document.getElementById('generateJarBtn').addEventListener('click', () => {
+  syncEntries();
+  const v = buildCustomMemories();
+  if(!v.length){ alert('Add at least one memory to share.'); return; }
+  activeMemories = v;
+  renderNotes(activeMemories);
+  closeCreatePanel();
+  openShare(v);
+});
+
+// ═══════════════════════════
+//  SHARE
+// ═══════════════════════════
+function openShare(mems) {
+  let encoded = '';
+  try {
+    const payload = {
+      memories: mems,
+      title: document.getElementById('jarTitle').value.trim(),
+      from:  document.getElementById('jarFrom').value.trim()
+    };
+    encoded = '#jar=' + btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  } catch(e) { encoded = '#jar=demo'; }
+  const url = location.href.split('#')[0] + encoded;
+  document.getElementById('shareLink').value = url;
+  document.getElementById('shareOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeShare() {
+  document.getElementById('shareOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.getElementById('shareCloseBtn').addEventListener('click', closeShare);
+document.getElementById('shareOverlay').addEventListener('click', e => { if(e.target===e.currentTarget) closeShare(); });
+
+document.getElementById('copyLinkBtn').addEventListener('click', () => {
+  const link = document.getElementById('shareLink').value;
+  const btn   = document.getElementById('copyLinkBtn');
+  navigator.clipboard.writeText(link).then(() => {
+    btn.textContent='✓ Copied!'; btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('copied');}, 2200);
+  }).catch(() => { document.getElementById('shareLink').select(); document.execCommand('copy'); });
+});
+
+document.getElementById('shareWhatsapp').addEventListener('click', () => {
+  const msg = encodeURIComponent('I made something special for you 🫙\n' + document.getElementById('shareLink').value);
+  window.open('https://wa.me/?text=' + msg, '_blank');
+});
+document.getElementById('shareEmail').addEventListener('click', () => {
+  const link = document.getElementById('shareLink').value;
+  window.location.href = `mailto:?subject=${encodeURIComponent('I made you a Memory Jar ✨')}&body=${encodeURIComponent('I made something just for you — open every note one by one.\n\n'+link)}`;
+});
+
+// ── Load from URL hash ──
+function loadFromHash() {
+  const hash = location.hash;
+  if(!hash.startsWith('#jar=') || hash.slice(5)==='demo') return;
+  try {
+    const data = JSON.parse(decodeURIComponent(escape(atob(hash.slice(5)))));
+    if(Array.isArray(data.memories) && data.memories.length) {
+      activeMemories = data.memories;
+      renderNotes(activeMemories);
+      const b = document.createElement('div');
+      b.style.cssText='position:fixed;top:22px;left:50%;transform:translateX(-50%);z-index:9990;background:linear-gradient(135deg,#1e1206,#2a1a08);border:1px solid rgba(200,148,63,.32);border-radius:3px;padding:11px 22px;font-family:\'DM Sans\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:rgba(232,196,122,.82);box-shadow:0 8px 32px rgba(0,0,0,.65);opacity:0;transition:opacity .5s;white-space:nowrap;pointer-events:none';
+      b.textContent='✦  Someone made this jar just for you  ✦';
+      document.body.appendChild(b);
+      requestAnimationFrame(()=>{b.style.opacity='1';setTimeout(()=>{b.style.opacity='0';setTimeout(()=>b.remove(),600);},4200);});
+    }
+  } catch(e) {}
+}
+
+// ═══════════════════════════
+//  PARTICLES
+// ═══════════════════════════
+function initParticles() {
+  const cv = document.getElementById('particle-canvas');
+  const cx = cv.getContext('2d');
+  function resize(){ cv.width=innerWidth; cv.height=innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+  const pts = Array.from({length:58},()=>({
+    x:Math.random()*innerWidth, y:Math.random()*innerHeight,
+    r:Math.random()*1.7+.28,
+    vx:(Math.random()-.5)*.14, vy:-(Math.random()*.22+.05),
+    a:Math.random()*.42+.08,
+    h:Math.random()*26+34,
+    t:Math.random()*Math.PI*2
+  }));
+  (function frame(){
+    cx.clearRect(0,0,cv.width,cv.height);
+    pts.forEach(p=>{
+      p.t+=.024; p.x+=p.vx+Math.sin(p.t*.7)*.16; p.y+=p.vy;
+      cx.beginPath(); cx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      cx.fillStyle=`hsla(${p.h},78%,72%,${p.a*(0.8+Math.sin(p.t*2.3)*.2)})`;
+      cx.fill();
+      if(p.y<-8){p.y=cv.height+8;p.x=Math.random()*cv.width;}
+      if(p.x<-8)p.x=cv.width+8; if(p.x>cv.width+8)p.x=-8;
+    });
+    requestAnimationFrame(frame);
+  })();
+}
+
+// ═══════════════════════════
+//  SCROLL REVEAL
+// ═══════════════════════════
+function initScroll(){
+  const el=document.getElementById('closing');
+  new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting)el.classList.add('visible');});},{threshold:.18}).observe(el);
+}
+
+// ═══════════════════════════
+//  CURSOR GLOW
+// ═══════════════════════════
+function initCursor(){
+  if(!window.matchMedia('(pointer:fine)').matches)return;
+  const g=document.createElement('div');
+  g.style.cssText='position:fixed;pointer-events:none;z-index:9997;width:210px;height:210px;border-radius:50%;background:radial-gradient(circle,rgba(200,148,63,.08) 0%,transparent 66%);transform:translate(-50%,-50%);mix-blend-mode:screen;transition:left .07s linear,top .07s linear';
+  document.body.appendChild(g);
+  window.addEventListener('mousemove',e=>{g.style.left=e.clientX+'px';g.style.top=e.clientY+'px';});
+}
+
+// ═══════════════════════════
+//  BOOT
+// ═══════════════════════════
+renderNotes(activeMemories);
+loadFromHash();
+initParticles();
+initScroll();
+initCursor();
+</script>
+</body>
+</html>
